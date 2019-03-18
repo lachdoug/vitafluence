@@ -15,12 +15,123 @@
         "level": "alpha",
         "patch": 0
       }
-    }
+    },
+    "timestamp": "2019-03-19T05:07:16+11:00"
   },
   "software": {
     "base": {
+      "name": "vfadmin",
+      "framework": "rails5",
       "deployment_type": "web",
-      "http_protocol": "https_and_http"
+      "http_protocol": "https_only",
+      "continuous_deployment": true,
+      "memory": {
+        "required": 512,
+        "recommended": 512
+      }
+    },
+    "scripts": {
+      "start": {
+        "language": "sh",
+        "content": "#!/bin/sh\r\n\r\ncd /home/app\r\ngit pull\r\nrake db:migrate\r\nrake assets:precompile"
+      },
+      "install": {
+        "language": "sh",
+        "content": "#!/bin/bash\r\n\r\ngem env"
+      },
+      "shutdown": {
+        "content": "#!/bin/bash\r\nsleep 600"
+      }
+    },
+    "installed_packages": [
+      {
+        "name": "vfadmin",
+        "download_type": "http(s)",
+        "command_options": " -c http.sslVerify=false ",
+        "source_url": "https://gitea.jvodan.com/lachlan/vfadmin.git",
+        "destination": "./",
+        "extraction_command": "git",
+        "path_to_extracted": "vfadmin"
+      }
+    ],
+    "service_configurations": [
+      {
+        "publisher_namespace": "EnginesSystem",
+        "type_path": "database/sql/mysql",
+        "variables": {
+          "database_name": "_Engines_Builder(engine_name)",
+          "database_host": "_Engines_System(mysql_host)",
+          "db_username": "_Engines_Builder(engine_name)",
+          "db_password": "_Engines_System(random(10))",
+          "collation": "utf8_general_ci",
+          "full_access": "false"
+        }
+      },
+      {
+        "publisher_namespace": "EnginesSystem",
+        "type_path": "filesystem/local/filesystem",
+        "variables": {
+          "service_name": "_Engines_Builder(engine_name)",
+          "volume_src": "",
+          "engine_path": "/home/fs/persist",
+          "permissions": "rw",
+          "user": "_Engines_Builder(data_uid)",
+          "group": "_Engines_Builder(data_gid)"
+        }
+      }
+    ],
+    "environment_variables": [
+      {
+        "name": "git_username",
+        "mandatory": true,
+        "ask_at_build_time": true,
+        "build_time_only": true,
+        "input": {
+          "type": "string",
+          "comment": "format user:password"
+        }
+      },
+      {
+        "name": "git_password",
+        "mandatory": true,
+        "ask_at_build_time": true,
+        "input": {
+          "type": "password"
+        }
+      }
+    ],
+    "actionators": [
+      {
+        "name": "run_rake",
+        "return_type": "plain_text",
+        "variables": [
+          {
+            "name": "rake_task",
+            "mandatory": true,
+            "input": {
+              "type": "string",
+              "title": "ie db:migrate"
+            }
+          }
+        ],
+        "script": {
+          "content": "#!/bin/sh\r\ncd /home/app\r\nbundle exec rake $rake_task"
+        }
+      }
+    ],
+    "framework_specific": {
+      "rake_tasks": [
+        {
+          "action": "db:migrate",
+          "always_run": true
+        },
+        {
+          "action": "db:seed"
+        },
+        {
+          "action": "assets:precompile"
+        }
+      ]
     }
   }
 }
